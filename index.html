@@ -483,7 +483,7 @@
   <div id="loading-overlay">
     <div class="loading-logo">urfaves</div>
     <div class="loading-spinner"></div>
-    <div class="loading-sub">Loading your favourites…</div>
+    <div class="loading-sub">Loading your favorites…</div>
   </div>
 
   <!-- HEADER -->
@@ -1135,8 +1135,7 @@ async function runManualSearch(originalUrl) {
 }
 
 async function uploadPhotoToSupabase(googlePhotoURL, restaurantName) {
-  const proxyURL = `https://api.allorigins.win/raw?url=${encodeURIComponent(googlePhotoURL)}`;
-  const res = await fetch(proxyURL);
+  const res = await fetch(googlePhotoURL, { mode: 'cors' });
   if (!res.ok) throw new Error('Failed to fetch photo');
 
   const blob = await res.blob();

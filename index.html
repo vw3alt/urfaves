@@ -889,7 +889,7 @@ function renderChoiceList() {
       <div class="mini-swipe-bg left"><span class="icon">✅</span></div>
       <a href="${r.mapURL}"><div class="mini-card-photo" style="${bg}"></div></a>
       <div class="mini-card-info">
-        <a href="${r.mapURL}"><div class="mini-card-name">${r.name}</div></a>
+        <a href="${r.mapURL}" style="text-decoration: none;"><div class="mini-card-name">${r.name}</div></a>
         <div class="mini-card-meta">${r.openHours}</div>
       </div>
       <div class="mini-card-handle">⠿</div>`;
@@ -996,7 +996,7 @@ function renderEdit() {
     card.innerHTML = `
       <a href="${r.mapURL}"><div class="edit-card-photo" style="${bg}"></div></a>
       <div class="edit-card-info">
-        <a href="${r.mapURL}"><div class="edit-card-name">${r.name}</div></a>
+        <a href="${r.mapURL}" style="text-decoration: none;"><div class="edit-card-name">${r.name}</div></a>
         <div class="edit-card-meta">${r.openHours}</div>
       </div>
       <div class="edit-card-delete visible" data-id="${r.id}"><span class="del-icon">❌</span></div>`;

@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>urfaves | Choose your restaurant!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+    key: "AIzaSyAolIHIepvvUtM8rIDpC997b2kNRIf5XHw", // this is domain restricted, you can't use it yourself ;)
+    v: "weekly",
+  });
+</script>
+<style>
+  :root {
+    --purple: #AE6FFC;
+    --purple-light: #F3EAFF;
+    --purple-dark: #8A50D4;
+    --green: #34A853;
+    --green-light: #E6F4EA;
+    --red: #EA4335;
+    --red-light: #FCE8E6;
+    --yellow: #FBBC04;
+    --gray-50: #F8F9FA;
+    --gray-100: #F1F3F4;
+    --gray-200: #E8EAED;
+    --gray-400: #BDC1C6;
+    --gray-600: #80868B;
+    --gray-800: #3C4043;
+    --gray-900: #202124;
+    --white: #FFFFFF;
+    --shadow-1: 0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+    --shadow-2: 0 2px 6px 2px rgba(60,64,67,.15);
+    --shadow-3: 0 4px 12px rgba(60,64,67,.25);
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-xl: 32px;
+    --font-main: 'Google Sans', 'Roboto', sans-serif;
+    --font-display: 'Google Sans Display', 'Google Sans', sans-serif;
+    --font-body: 'Roboto', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%; width: 100%; overflow: hidden;
+    font-family: var(--font-main);
+    background: var(--gray-100);
+    color: var(--gray-900);
+    touch-action: none;
+  }
+
+  #app {
+    height: 100%; width: 100%; max-width: 430px;
+    margin: 0 auto; position: relative; overflow: hidden;
+    background: var(--white);
+    box-shadow: var(--shadow-3);
+  }
+
+  /* ── LOADING OVERLAY ── */
+  #loading-overlay {
+    position: absolute; inset: 0; z-index: 500;
+    background: var(--white);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px;
+    transition: opacity .3s;
+  }
+  #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .loading-logo {
+    font-family: var(--font-display); font-size: 28px; font-weight: 700;
+    color: var(--purple);
+  }
+  .loading-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--purple);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  .loading-sub { font-size: 13px; color: var(--gray-600); }
+
+  /* ── HEADER ── */
+  .header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .header-logo {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 700;
+    color: var(--purple);
+    letter-spacing: -0.3px;
+  }
+  .header-btn {
+    width: 36px; height: 36px; border: none; background: none; cursor: pointer;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-800); font-size: 20px;
+    transition: background .15s;
+  }
+  .header-btn:hover { background: var(--gray-100); }
+  .header-btn svg { width: 20px; height: 20px; display: block; }
+  .header-mode-label {
+    font-size: 13px; font-weight: 500; color: var(--gray-600);
+    background: var(--gray-100); padding: 4px 12px; border-radius: 20px;
+  }
+
+  /* ── SCREEN ── */
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+  .screen.active { opacity: 1; pointer-events: all; }
+
+  /* ══════════════════════════════
+     MODE 1: SWIPE
+  ══════════════════════════════ */
+  #screen-swipe { background: var(--gray-100); }
+
+  .swipe-area {
+    flex: 1; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    padding: 70px 20px 20px;
+    overflow: hidden;
+  }
+
+  .card-stack {
+    position: relative;
+    width: 100%; max-width: 380px;
+    height: 100%;
+  }
+
+  .swipe-card {
+    position: absolute; inset: 0;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-3);
+    cursor: grab;
+    user-select: none;
+    transform-origin: center bottom;
+    will-change: transform;
+    transition: box-shadow .15s;
+  }
+  .swipe-card:active { cursor: grabbing; box-shadow: 0 8px 32px rgba(60,64,67,.35); }
+
+  .card-photo {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+  }
+  .card-photo::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.3) 50%, rgba(0,0,0,0) 80%);
+  }
+
+  .card-info {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 24px 20px 28px;
+    color: white; z-index: 1;
+  }
+  .card-name {
+    font-family: var(--font-display);
+    font-size: 26px; font-weight: 700;
+    line-height: 1.1; margin-bottom: 8px;
+    text-shadow: 0 1px 4px rgba(0,0,0,.4);
+  }
+  .card-meta {
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .card-price {
+    font-size: 13px; font-weight: 500;
+    background: rgba(255,255,255,.2);
+    backdrop-filter: blur(4px);
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.3);
+  }
+  .card-hours { font-size: 12px; font-weight: 400; opacity: .9; }
+  .card-address {
+    font-size: 12px; opacity: .85;
+    display: flex; align-items: center; gap: 4px;
+    text-decoration: none; color: white;
+    width: fit-content;
+    border-bottom: 1px solid rgba(255,255,255,.5);
+  }
+  .card-address:hover { opacity: 1; }
+
+  /* swipe indicators */
+  .swipe-indicator {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    padding: 8px 16px; border-radius: var(--radius-md);
+    font-size: 22px; font-weight: 700; letter-spacing: 1px;
+    opacity: 0; pointer-events: none; z-index: 10;
+    border: 3px solid; transition: opacity .05s;
+  }
+  .indicator-like { left: 20px; color: var(--green); border-color: var(--green); background: rgba(52,168,83,.12); }
+  .indicator-nope { right: 20px; color: var(--red); border-color: var(--red); background: rgba(234,67,53,.12); }
+
+  /* stack ghost cards */
+  .swipe-card.ghost-1 { transform: translateY(10px) scale(0.96); pointer-events: none; z-index: 0; }
+  .swipe-card.ghost-2 { transform: translateY(20px) scale(0.92); pointer-events: none; z-index: -1; opacity: .7; }
+  .swipe-card.top-card { z-index: 5; }
+
+  /* empty state */
+  .empty-swipe {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 16px; padding: 20px; text-align: center; padding-top: 70px;
+  }
+  .empty-icon { font-size: 64px; }
+  .empty-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--gray-900); }
+  .empty-sub { font-size: 14px; color: var(--gray-600); line-height: 1.5; max-width: 260px; }
+  .empty-btn {
+    margin-top: 8px; padding: 12px 28px; border-radius: 24px;
+    background: var(--purple); color: white; border: none; cursor: pointer;
+    font-family: var(--font-main); font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-1); transition: background .15s;
+  }
+  .empty-btn:hover { background: var(--purple-dark); }
+
+  /* ══════════════════════════════
+     MODE 2: CHOICE (CURATION)
+  ══════════════════════════════ */
+  #screen-choice { background: var(--gray-50); }
+
+  .choice-list-container {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 70px 16px 96px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .choice-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .mini-card {
+    background: var(--white); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1); display: flex; align-items: center;
+    overflow: hidden; height: 80px; position: relative;
+    transition: transform .2s, opacity .2s, box-shadow .15s;
+    touch-action: none; user-select: none; cursor: grab;
+  }
+  .mini-card:active { cursor: grabbing; }
+  .mini-card.grayed { opacity: .5; filter: grayscale(0.4); }
+  .mini-card.dragging { box-shadow: var(--shadow-3); z-index: 50; opacity: .95; }
+
+  .mini-card-photo { width: 80px; height: 80px; flex-shrink: 0; background-size: cover; background-position: center; }
+  .mini-card-info { flex: 1; padding: 10px 14px; overflow: hidden; }
+  .mini-card-name {
+    font-size: 15px; font-weight: 600; color: var(--gray-900);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+  }
+  .mini-card-meta { font-size: 12px; color: var(--gray-600); display: flex; align-items: center; gap: 6px; }
+  .mini-card-handle { width: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--gray-400); font-size: 18px; }
+
+  .mini-swipe-bg {
+    position: absolute; inset: 0; display: flex; align-items: center; padding: 0 20px;
+    border-radius: var(--radius-md); opacity: 0; pointer-events: none; transition: opacity .1s; z-index: 0;
+  }
+  .mini-swipe-bg.right { background: var(--red-light); justify-content: flex-end; }
+  .mini-swipe-bg.left  { background: var(--green-light); justify-content: flex-start; }
+  .mini-swipe-bg .icon { font-size: 22px; }
+
+  /* footer */
+  .choice-footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 12px 16px 28px; background: var(--white);
+    border-top: 1px solid var(--gray-200); display: flex; gap: 12px;
+  }
+  .footer-btn {
+    flex: 1; padding: 14px; border-radius: var(--radius-md);
+    border: none; cursor: pointer; font-family: var(--font-main);
+    font-size: 14px; font-weight: 500;
+    transition: background .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .footer-btn:active { transform: scale(.97); }
+  .footer-btn-outline { background: var(--white); color: var(--purple); border: 1.5px solid var(--purple); }
+  .footer-btn-primary { background: var(--purple); color: var(--white); box-shadow: var(--shadow-1); }
+  .footer-btn-primary:hover { background: var(--purple-dark); }
+
+  /* ══════════════════════════════
+     MODE 3: EDIT
+  ══════════════════════════════ */
+  #screen-edit { background: var(--gray-50); }
+
+  .edit-list-container {
+    flex: 1; overflow-y: auto;
+    padding: 70px 16px 96px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .edit-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+  .edit-card {
+    background: var(--white); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1); display: flex; align-items: center;
+    overflow: hidden; height: 80px; position: relative;
+  }
+
+  .edit-card-delete {
+    width: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; flex-shrink: 0; transition: width .2s; cursor: pointer;
+  }
+  .edit-card-delete.visible { width: 72px; }
+  .edit-card-delete .del-icon { color: white; font-size: 18px; }
+
+  .edit-card-photo { width: 80px; height: 80px; flex-shrink: 0; background-size: cover; background-position: center; }
+  .edit-card-info { flex: 1; padding: 10px 14px; overflow: hidden; }
+  .edit-card-name {
+    font-size: 15px; font-weight: 600; color: var(--gray-900);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+  }
+  .edit-card-meta { font-size: 12px; color: var(--gray-600); }
+
+  /* Add button — full width, flush with cards, no side margin */
+  .edit-add-btn {
+    width: 100%; padding: 14px; border-radius: var(--radius-md);
+    border: 1.5px dashed var(--purple); background: var(--purple-light);
+    color: var(--purple); cursor: pointer;
+    font-family: var(--font-main); font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .15s;
+  }
+  .edit-add-btn:hover { background: #e8d5ff; }
+
+  /* Edit confirm footer */
+  .edit-footer {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 12px 16px 28px; background: var(--white);
+    border-top: 1px solid var(--gray-200);
+  }
+  .edit-done-btn {
+    width: 100%; padding: 14px; border-radius: var(--radius-md);
+    background: var(--purple); color: white;
+    border: none; cursor: pointer; font-family: var(--font-main);
+    font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: var(--shadow-1); transition: background .15s, transform .1s;
+  }
+  .edit-done-btn:active { transform: scale(.98); }
+  .edit-done-btn:hover  { background: var(--purple-dark); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: absolute; inset: 0; z-index: 200;
+    background: rgba(32,33,36,.6); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    background: var(--white); border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 24px 20px 40px; width: 100%;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle { width: 40px; height: 4px; background: var(--gray-200); border-radius: 2px; margin: 0 auto 20px; }
+  .modal-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin-bottom: 6px; color: var(--gray-900); }
+  .modal-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 20px; }
+  .modal-input {
+    width: 100%; padding: 14px 16px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-md);
+    font-family: var(--font-main); font-size: 14px; color: var(--gray-900); outline: none;
+    transition: border-color .15s; margin-bottom: 8px;
+  }
+  .modal-input:focus { border-color: var(--purple); }
+  .modal-parsed {
+    background: var(--gray-50); border-radius: var(--radius-md);
+    padding: 12px 16px; margin-bottom: 16px;
+    font-size: 13px; color: var(--gray-800); line-height: 1.6; display: none;
+  }
+  .modal-parsed.visible { display: block; }
+  .modal-parsed strong { color: var(--gray-900); }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-cancel {
+    flex: 1; padding: 14px; border-radius: var(--radius-md);
+    background: var(--gray-100); color: var(--gray-800);
+    border: none; cursor: pointer; font-family: var(--font-main); font-size: 14px; font-weight: 500;
+  }
+  .modal-submit {
+    flex: 2; padding: 14px; border-radius: var(--radius-md);
+    background: var(--purple); color: white; border: none; cursor: pointer;
+    font-family: var(--font-main); font-size: 14px; font-weight: 500; transition: background .15s;
+  }
+  .modal-submit:hover { background: var(--purple-dark); }
+  .modal-submit:disabled { background: var(--gray-400); cursor: default; }
+
+  .parse-loading { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--gray-600); padding: 8px 0; display: none; }
+  .parse-loading.visible { display: flex; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid var(--gray-200);
+    border-top-color: var(--purple); border-radius: 50%; animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ══════════════════════════════
+     MODE 4: NARROW (FACE-OFF)
+  ══════════════════════════════ */
+  #screen-narrow { background: var(--gray-900); }
+  .faceoff-container { flex: 1; display: flex; flex-direction: column; padding: 56px 0 0; overflow: hidden; }
+
+  .faceoff-half { flex: 1; position: relative; overflow: hidden; cursor: pointer; transition: flex .4s cubic-bezier(.4,0,.2,1); }
+  .faceoff-half.grayed { flex: 0.35; }
+  .faceoff-half.winner { flex: 3; }
+
+  .faceoff-photo { position: absolute; inset: 0; background-size: cover; background-position: center; transition: filter .3s; }
+  .faceoff-half.grayed .faceoff-photo { filter: grayscale(1) brightness(.5); }
+  .faceoff-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.1) 60%);
+    display: flex; align-items: flex-end; padding: 20px; transition: background .3s;
+  }
+  .faceoff-info { color: white; }
+  .faceoff-name { font-family: var(--font-display); font-size: 22px; font-weight: 700; line-height: 1.1; margin-bottom: 4px; text-shadow: 0 1px 4px rgba(0,0,0,.5); }
+  .faceoff-meta { font-size: 13px; opacity: .85; }
+
+  .faceoff-divider { height: 2px; background: var(--gray-900); flex-shrink: 0; display: flex; align-items: center; justify-content: center; z-index: 10; }
+  .vs-badge {
+    background: var(--gray-900); color: white;
+    font-family: var(--font-display); font-size: 12px; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px; border: 2px solid var(--gray-800); letter-spacing: 1px;
+  }
+
+  .faceoff-tap-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s; }
+  .faceoff-half:hover .faceoff-tap-hint { opacity: 1; }
+  .tap-ring {
+    width: 60px; height: 60px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.6); background: rgba(255,255,255,.15);
+    backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+
+  .winner-overlay {
+    position: absolute; inset: 0; z-index: 50; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 40px;
+    pointer-events: none; opacity: 0; transition: opacity .5s;
+  }
+  .winner-overlay.show { opacity: 1; }
+  .winner-badge { font-size: 48px; margin-bottom: 8px; animation: bounce .6s ease infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-8px); } }
+  .winner-title { font-family: var(--font-display); font-size: 28px; font-weight: 700; color: white; text-shadow: 0 2px 8px rgba(0,0,0,.5); margin-bottom: 4px; }
+  .winner-sub { font-size: 14px; color: rgba(255,255,255,.8); margin-bottom: 24px; }
+  .winner-restart {
+    padding: 14px 32px; border-radius: 24px; background: white; color: var(--purple);
+    border: none; cursor: pointer; pointer-events: all;
+    font-family: var(--font-main); font-size: 15px; font-weight: 600; box-shadow: var(--shadow-3); transition: transform .1s;
+  }
+  .winner-restart:active { transform: scale(.95); }
+
+  .narrow-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; padding-top: 56px; text-align: center; color: var(--gray-600); }
+  .narrow-empty-icon { font-size: 48px; }
+  .narrow-empty-title { font-size: 18px; font-weight: 600; color: var(--gray-800); }
+  .narrow-empty-sub { font-size: 14px; max-width: 260px; line-height: 1.5; }
+
+  /* ── CONFETTI ── */
+  #confetti-canvas { position: absolute; inset: 0; z-index: 300; pointer-events: none; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--gray-900); color: white; padding: 10px 20px; border-radius: 24px;
+    font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: var(--shadow-3);
+    opacity: 0; transition: opacity .2s, transform .2s; z-index: 999; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Misc */
+  .count-pill { background: var(--purple); color: white; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: .5px; color: var(--gray-600); text-transform: uppercase; padding: 0 4px 12px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay">
+    <div class="loading-logo">urfaves</div>
+    <div class="loading-spinner"></div>
+    <div class="loading-sub">Loading your favourites…</div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="header" id="main-header">
+    <div class="header-logo" onclick="goHome()" style="cursor:pointer;">urfaves</div>
+    <div class="header-mode-label" id="mode-label">Discover</div>
+    <button class="header-btn" id="header-action-btn" title="Edit">✏️</button>
+  </header>
+
+  <!-- SCREEN 1: SWIPE (no X/heart buttons) -->
+  <section class="screen active" id="screen-swipe">
+    <div class="swipe-area" id="swipe-area">
+      <div class="card-stack" id="card-stack"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: CHOICE -->
+  <section class="screen" id="screen-choice">
+    <div class="choice-list-container">
+      <div class="section-label" id="choice-label">Your Picks</div>
+      <div class="choice-list" id="choice-list"></div>
+    </div>
+    <div class="choice-footer">
+      <button class="footer-btn footer-btn-outline" id="btn-edit-mode">✏️ Edit List</button>
+      <button class="footer-btn footer-btn-primary" id="btn-narrow">⚡ Narrow It Down</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: EDIT -->
+  <section class="screen" id="screen-edit">
+    <div class="edit-list-container">
+      <div class="section-label">Master List</div>
+      <button class="edit-add-btn" id="btn-add">＋ Add from Google Maps</button>
+      <div class="edit-list" id="edit-list"></div>
+    </div>
+    <div class="edit-footer">
+      <button class="edit-done-btn" id="btn-edit-done">✓ Done Editing</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: NARROW -->
+  <section class="screen" id="screen-narrow">
+    <div class="faceoff-container" id="faceoff-container"></div>
+  </section>
+
+  <!-- ADD MODAL -->
+  <div class="modal-overlay" id="modal-add">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Add a Restaurant</div>
+      <div class="modal-sub">Search or paste a Google Maps link below.</div>
+      <input class="modal-input" id="modal-url-input" type="url" placeholder="The Varsity or https://maps.google.com/..." />
+      <div class="parse-loading" id="parse-loading"><div class="spinner"></div> Fetching details…</div>
+      <div class="modal-parsed" id="modal-parsed"></div>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="modal-cancel">Cancel</button>
+        <button class="modal-submit" id="modal-submit" disabled>Add Restaurant</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="confetti-canvas"></canvas>
+  <div class="toast" id="toast"></div>
+</div>
+
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════
+    SUPABASE CLIENT
+══════════════════════════════════════════════════════ */
+const SUPABASE_URL = 'https://uloftsbeicvxfhnyiypu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Zbw-Tv98HjiCMvQAZH989Q_OJ53leAd';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ══════════════════════════════════════════════════════
+   COLOR GRADIENTS (fallback when no photoURL)
+══════════════════════════════════════════════════════ */
+const COLORS = [
+  '#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7',
+  '#DDA0DD','#98FB98','#F0E68C','#87CEEB','#FFA07A',
+  '#20B2AA','#778899','#B0C4DE','#FFDAB9','#E6E6FA'
+];
+function colorGradient(r) {
+  const seed = typeof r.id === 'number' ? r.id
+    : [...(r.name || '')].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const i = seed % COLORS.length;
+  return `linear-gradient(135deg, ${COLORS[i]} 0%, ${COLORS[(i+3)%COLORS.length]} 100%)`;
+}
+
+/* ══════════════════════════════════════════════════════
+   IN-MEMORY STATE
+  masterListDB  — loaded from Supabase; mutated by add/delete
+  activeDeck    — volatile: cards remaining to swipe this session
+  keptList      — volatile: swiped right
+  grayedList    — volatile: swiped left
+══════════════════════════════════════════════════════ */
+let masterListDB = [];
+let activeDeck   = [];
+let keptList     = [];
+let grayedList   = [];
+
+/* ══════════════════════════════════════════════════════
+   SUPABASE HELPERS
+══════════════════════════════════════════════════════ */
+
+// Map a DB row → app restaurant object.
+// Supabase column names assumed: id, name, price_level, open_hours, address, map_url, photo_url
+function mapRow(row) {
+  const address  = row.address  || '';
+  const mapURL   = row.map_url  || `https://maps.apple.com/?q=${encodeURIComponent(address)}`;
+  return {
+    id:         row.id,
+    name:       row.name        || 'Unnamed',
+    priceLevel: row.price_level || '',
+    openHours:  row.open_hours  || '',
+    address,
+    mapURL,
+    photoURL:   row.photo_url   || '',
+  };
+}
+
+async function fetchAllRestaurants() {
+  const { data, error } = await sb.from('restaurants').select('*').order('id');
+  if (error) { console.error('Supabase fetch error:', error); return []; }
+  return (data || []).map(mapRow);
+}
+
+async function dbDelete(id) {
+  const { error } = await sb.from('restaurants').delete().eq('id', id);
+  if (error) throw error;
+}
+
+async function dbInsert(data) {
+  const payload = {
+    name:        data.name,
+    price_level: data.priceLevel,
+    open_hours:  data.openHours,
+    address:     data.address,
+    map_url:     data.mapURL,
+    photo_url:   data.photoURL || null,
+  };
+  const { data: rows, error } = await sb.from('restaurants').insert(payload).select();
+  if (error) throw error;
+  return mapRow(rows[0]);
+}
+
+/* ══════════════════════════════════════════════════════
+   LOCAL MUTATIONS (keep session state in sync)
+══════════════════════════════════════════════════════ */
+function localDelete(id) {
+  masterListDB = masterListDB.filter(r => r.id !== id);
+  activeDeck   = activeDeck.filter(r => r.id !== id);
+  keptList     = keptList.filter(r => r.id !== id);
+  grayedList   = grayedList.filter(r => r.id !== id);
+}
+function localAdd(r) {
+  masterListDB.push(r);
+  activeDeck.push(r);
+  if (keptList.length > 0 || grayedList.length > 0) {
+    keptList.push(r);
+    choiceOrder = [...keptList.map(x => x.id), ...grayedList.map(x => x.id)];
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT — fetch from Supabase, then start the app
+══════════════════════════════════════════════════════ */
+async function init() {
+  showLoading(true);
+  masterListDB = await fetchAllRestaurants();
+  activeDeck = [...masterListDB];
+  keptList   = [];
+  grayedList = [];
+  showLoading(false);
+  bindButtons();
+  setMode('swipe');
+  renderSwipe();
+}
+
+function showLoading(on) {
+  document.getElementById('loading-overlay').classList.toggle('hidden', !on);
+}
+
+/* ══════════════════════════════════════════════════════
+   MODE SWITCHING
+══════════════════════════════════════════════════════ */
+const BACK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+const modeLabels = { swipe: 'Discover', choice: 'Your Picks', edit: 'Edit List', narrow: 'Face-Off' };
+
+function setMode(mode) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${mode}`).classList.add('active');
+  document.getElementById('mode-label').textContent = modeLabels[mode];
+
+  const btn = document.getElementById('header-action-btn');
+  if (mode === 'edit') {
+    btn.innerHTML = BACK_SVG; btn.title = 'Back to Picks';
+    btn.onclick = () => { renderChoice(); stopConfetti(); setMode('choice'); };
+  } else if (mode === 'narrow') {
+    btn.innerHTML = BACK_SVG; btn.title = 'Back to Picks';
+    btn.onclick = () => { setMode('choice'); stopConfetti(); }
+  } else if (mode === 'choice') {
+    btn.innerHTML = '🔄'; btn.title = 'Restart';
+    btn.onclick = restartSession;
+  } else {
+    btn.innerHTML = '✏️'; btn.title = 'Edit list';
+    btn.onclick = () => { renderEdit(); setMode('edit'); };
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   BIND BUTTONS
+══════════════════════════════════════════════════════ */
+function bindButtons() {
+  document.getElementById('btn-edit-mode').onclick  = () => { renderEdit(); setMode('edit'); };
+  document.getElementById('btn-narrow').onclick     = () => { initFaceoff(); setMode('narrow'); };
+  document.getElementById('btn-add').onclick        = openAddModal;
+  document.getElementById('btn-edit-done').onclick  = () => { renderChoice(); setMode('choice'); };
+  document.getElementById('modal-cancel').onclick   = closeAddModal;
+  document.getElementById('modal-submit').onclick   = submitAdd;
+  document.getElementById('modal-url-input').oninput = onUrlInput;
+}
+
+function restartSession() {
+  activeDeck = [...masterListDB]; keptList = []; grayedList = [];
+  setMode('swipe'); renderSwipe();
+}
+
+function goHome() {
+  const hasSession = keptList.length > 0 || grayedList.length > 0;
+  if (hasSession) {
+    const grayedIds = new Set(grayedList.map(r => r.id));
+    activeDeck = masterListDB.filter(r => !grayedIds.has(r.id));
+  } else {
+    activeDeck = [...masterListDB];
+  }
+  setMode('swipe');
+  renderSwipe();
+}
+
+/* ══════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ══════════════════════════════════════════════════════
+   MODE 1: SWIPE
+══════════════════════════════════════════════════════ */
+function renderSwipe() {
+  const area = document.getElementById('swipe-area');
+  let stack  = document.getElementById('card-stack');
+
+  if (activeDeck.length === 0) {
+    area.innerHTML = `
+      <div class="empty-swipe">
+        <div class="empty-icon">🍽️</div>
+        <div class="empty-title">You've seen them all!</div>
+        <div class="empty-sub">Check your picks to narrow it down, or restart to go again.</div>
+        <button class="empty-btn" onclick="goToChoice()">See My Picks <span class="count-pill">${keptList.length}</span></button>
+      </div>`;
+    return;
+  }
+
+  if (!document.getElementById('card-stack')) {
+    area.innerHTML = '<div class="card-stack" id="card-stack"></div>';
+    stack = document.getElementById('card-stack');
+  } else {
+    stack.innerHTML = '';
+  }
+
+  activeDeck.slice(-3).reverse().forEach((r, i) => {
+    const card = createSwipeCard(r);
+    if (i === 0) { card.classList.add('top-card'); attachSwipeEvents(card, r); }
+    else if (i === 1) card.classList.add('ghost-1');
+    else card.classList.add('ghost-2');
+    stack.appendChild(card);
+  });
+}
+
+function createSwipeCard(r) {
+  const card = document.createElement('div');
+  card.className = 'swipe-card';
+  card.dataset.id = r.id;
+  const bg = r.photoURL ? `background-image:url(${r.photoURL})` : `background:${colorGradient(r)}`;
+  card.innerHTML = `
+    <div class="card-photo" style="${bg}"></div>
+    <div class="swipe-indicator indicator-like">KEEP ♥</div>
+    <div class="swipe-indicator indicator-nope">SKIP ✕</div>
+    <div class="card-info">
+      <div class="card-name">${r.name}</div>
+      <div class="card-meta">
+        <span class="card-hours">${r.openHours}</span>
+      </div>
+      <a class="card-address" href="${r.mapURL}" target="_blank">📍 ${r.address}</a>
+    </div>`;
+  return card;
+}
+
+function attachSwipeEvents(card, r) {
+  let startX, dx = 0;
+  const onStart = ex => { startX = ex; dx = 0; card.style.transition = 'none'; };
+  const onMove  = ex => {
+    dx = ex - startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx * 0.08}deg)`;
+    const p = Math.min(Math.abs(dx) / 100, 1);
+    card.querySelector('.indicator-like').style.opacity = dx > 0 ? p : 0;
+    card.querySelector('.indicator-nope').style.opacity = dx < 0 ? p : 0;
+  };
+  const onEnd = () => {
+    if (Math.abs(dx) > 90) doSwipe(dx > 0 ? 'right' : 'left', card, r);
+    else {
+      card.style.transition = 'transform .35s cubic-bezier(.4,0,.2,1)';
+      card.style.transform = '';
+      card.querySelectorAll('.swipe-indicator').forEach(el => el.style.opacity = 0);
+    }
+  };
+
+  card.addEventListener('mousedown', e => onStart(e.clientX));
+  const mmv = e => { if (startX === undefined) return; onMove(e.clientX); };
+  const mup = () => { if (startX === undefined) return; onEnd(); startX = undefined; };
+  window.addEventListener('mousemove', mmv);
+  window.addEventListener('mouseup', mup);
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchmove', e => { if (startX === undefined) return; onMove(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+  card.addEventListener('touchend', () => { if (startX === undefined) return; onEnd(); startX = undefined; });
+}
+
+function doSwipe(direction, card, r) {
+  if (!card) {
+    card = document.getElementById('card-stack')?.querySelector('.top-card');
+    if (!card) return;
+    r = activeDeck[activeDeck.length - 1];
+  }
+  const flyX = direction === 'right' ? 600 : -600;
+  card.style.transition = 'transform .4s cubic-bezier(.4,0,.2,1), opacity .4s';
+  card.style.transform  = `translateX(${flyX}px) rotate(${direction === 'right' ? 20 : -20}deg)`;
+  card.style.opacity    = '0';
+  activeDeck = activeDeck.filter(rr => rr.id !== r.id);
+  if (direction === 'right') { keptList.push(r);   showToast(`♥ Keeping ${r.name}`); }
+  else                       { grayedList.push(r); showToast(`✕ Skipping ${r.name}`); }
+  setTimeout(() => {
+    renderSwipe();
+    if (activeDeck.length === 0) setTimeout(goToChoice, 600);
+  }, 380);
+}
+
+function goToChoice() {
+  if (keptList.length === 0 && grayedList.length === 0) keptList = [...masterListDB];
+  renderChoice(); setMode('choice');
+}
+
+/* ══════════════════════════════════════════════════════
+   MODE 2: CHOICE
+══════════════════════════════════════════════════════ */
+let choiceOrder  = [];
+let choiceGrayed = new Set();
+
+function renderChoice() {
+  const hasSession = keptList.length > 0 || grayedList.length > 0;
+  if (hasSession) {
+    if (choiceOrder.length === 0) {
+      choiceOrder = [...keptList.map(r => r.id), ...grayedList.map(r => r.id)];
+    }
+    choiceGrayed = new Set(grayedList.map(r => r.id));
+  } else {
+    choiceOrder  = masterListDB.map(r => r.id);
+    choiceGrayed = new Set();
+  }
+  choiceOrder = [
+    ...choiceOrder.filter(id => !choiceGrayed.has(id)),
+    ...choiceOrder.filter(id =>  choiceGrayed.has(id)),
+  ];
+  renderChoiceList();
+}
+
+function renderChoiceList() {
+  const list  = document.getElementById('choice-list');
+  const label = document.getElementById('choice-label');
+  label.innerHTML = `Your Picks <span class="count-pill">${choiceOrder.filter(id => !choiceGrayed.has(id)).length} active</span>`;
+  list.innerHTML = '';
+
+  choiceOrder.forEach((id, idx) => {
+    const r = masterListDB.find(rr => rr.id === id)
+           || keptList.find(rr => rr.id === id)
+           || grayedList.find(rr => rr.id === id);
+    if (!r) return;
+    const isGrayed = choiceGrayed.has(id);
+    const card = document.createElement('div');
+    card.className = `mini-card ${isGrayed ? 'grayed' : ''}`;
+    card.dataset.id = id; card.dataset.idx = idx;
+    const bg = r.photoURL ? `background-image:url(${r.photoURL})` : `background:${colorGradient(r)}`;
+    card.innerHTML = `
+      <div class="mini-swipe-bg right"><span class="icon">🚫</span></div>
+      <div class="mini-swipe-bg left"><span class="icon">✅</span></div>
+      <div class="mini-card-photo" style="${bg}"></div>
+      <div class="mini-card-info">
+        <div class="mini-card-name">${r.name}</div>
+        <div class="mini-card-meta">${r.openHours}</div>
+      </div>
+      <div class="mini-card-handle">⠿</div>`;
+    attachMiniSwipe(card, r, isGrayed);
+    attachDragReorder(card);
+    list.appendChild(card);
+  });
+}
+
+function attachMiniSwipe(card, r, isGrayed) {
+  let startX, dx = 0;
+  const onStart = ex => { startX = ex; dx = 0; card.style.transition = 'none'; };
+  const onMove  = ex => {
+    dx = ex - startX;
+    card.style.transform = `translateX(${dx * 0.4}px)`;
+    const rb = card.querySelector('.mini-swipe-bg.right');
+    const lb = card.querySelector('.mini-swipe-bg.left');
+    if (dx > 20)       { rb.style.opacity = Math.min(dx/60,1);  lb.style.opacity = 0; }
+    else if (dx < -20) { lb.style.opacity = Math.min(-dx/60,1); rb.style.opacity = 0; }
+    else               { rb.style.opacity = 0; lb.style.opacity = 0; }
+  };
+  const onEnd = () => {
+    card.style.transition = 'transform .25s, opacity .2s';
+    card.style.transform = '';
+    card.querySelectorAll('.mini-swipe-bg').forEach(el => el.style.opacity = 0);
+    if (!isGrayed && dx > 60) grayCard(r.id);
+    else if (isGrayed && dx < -60) restoreCard(r.id);
+  };
+
+  card.addEventListener('mousedown', e => { if (e.target.closest('.mini-card-handle')) return; onStart(e.clientX); });
+  window.addEventListener('mousemove', e => { if (startX === undefined) return; onMove(e.clientX); });
+  window.addEventListener('mouseup', () => { if (startX === undefined) return; onEnd(); startX = undefined; });
+  card.addEventListener('touchstart', e => { if (e.target.closest('.mini-card-handle')) return; onStart(e.touches[0].clientX); }, { passive: true });
+  card.addEventListener('touchmove', e => { if (startX === undefined) return; onMove(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+  card.addEventListener('touchend', () => { if (startX === undefined) return; onEnd(); startX = undefined; });
+}
+
+function grayCard(id) {
+  choiceGrayed.add(id);
+  choiceOrder = [...choiceOrder.filter(i => i !== id), id];
+  renderChoiceList(); showToast('Moved to bottom');
+}
+function restoreCard(id) {
+  choiceGrayed.delete(id);
+  choiceOrder = [id, ...choiceOrder.filter(i => i !== id)];
+  renderChoiceList(); showToast('Restored to top');
+}
+
+/* ── Drag & Drop Reorder ── */
+let dragEl = null, dragPlaceholder = null;
+function attachDragReorder(card) {
+  card.querySelector('.mini-card-handle').addEventListener('mousedown', startDrag);
+  card.querySelector('.mini-card-handle').addEventListener('touchstart', startDrag, { passive: true });
+
+  function startDrag(e) {
+    e.stopPropagation();
+    dragEl = card;
+    const rect = card.getBoundingClientRect();
+    const cy0  = e.touches ? e.touches[0].clientY : e.clientY;
+    const offY = cy0 - rect.top;
+    card.classList.add('dragging');
+    card.style.cssText += `width:${rect.width}px;position:fixed;top:${rect.top}px;left:${rect.left}px;z-index:100;`;
+    dragPlaceholder = Object.assign(document.createElement('div'), { style: `height:${card.offsetHeight}px;background:var(--gray-100);border-radius:var(--radius-md);margin-bottom:10px;` });
+    card.parentNode.insertBefore(dragPlaceholder, card.nextSibling);
+
+    const onMove = e => {
+      if (!dragEl) return;
+      if (e.cancelable) e.preventDefault();
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      dragEl.style.top = (cy - offY) + 'px';
+      const items = [...document.getElementById('choice-list').querySelectorAll('.mini-card:not(.dragging)')];
+      let before = null;
+      for (const item of items) { const r = item.getBoundingClientRect(); if (cy < r.top + r.height/2) { before = item; break; } }
+      before ? document.getElementById('choice-list').insertBefore(dragPlaceholder, before)
+             : document.getElementById('choice-list').appendChild(dragPlaceholder);
+    };
+    const onEnd = () => {
+      if (!dragEl) return;
+      dragEl.style.position = dragEl.style.top = dragEl.style.left = dragEl.style.width = dragEl.style.zIndex = '';
+      dragEl.classList.remove('dragging');
+      if (dragPlaceholder?.parentNode) { dragPlaceholder.parentNode.insertBefore(dragEl, dragPlaceholder); dragPlaceholder.remove(); }
+      choiceOrder = [...document.getElementById('choice-list').querySelectorAll('.mini-card')].map(el => +el.dataset.id);
+      dragEl = null;
+      window.removeEventListener('mousemove', onMove); window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('mouseup', onEnd);    window.removeEventListener('touchend', onEnd);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchend', onEnd);
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   MODE 3: EDIT
+══════════════════════════════════════════════════════ */
+function renderEdit() {
+  const list = document.getElementById('edit-list');
+  list.innerHTML = '';
+  masterListDB.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'edit-card';
+    const bg = r.photoURL ? `background-image:url(${r.photoURL})` : `background:${colorGradient(r)}`;
+    card.innerHTML = `
+      <div class="edit-card-photo" style="${bg}"></div>
+      <div class="edit-card-info">
+        <div class="edit-card-name">${r.name}</div>
+        <div class="edit-card-meta">${r.openHours}</div>
+      </div>
+      <div class="edit-card-delete visible" data-id="${r.id}"><span class="del-icon">❌</span></div>`;
+
+    // swipe-left to reveal delete zone on mobile
+    let sx, dx = 0;
+    card.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dx = 0; }, { passive: true });
+    card.addEventListener('touchmove', e => {
+      if (sx === undefined) return;
+      dx = e.touches[0].clientX - sx;
+      if (dx < -10) e.preventDefault();
+    }, { passive: false });
+    card.addEventListener('touchend', () => {
+      card.querySelector('.edit-card-delete').classList.toggle('visible', dx < -50);
+      sx = undefined;
+    });
+
+    card.querySelector('.edit-card-delete').addEventListener('click', async () => {
+      const id = +card.querySelector('[data-id]').dataset.id;
+      try {
+        await dbDelete(id);       // persist to Supabase
+        localDelete(id);          // update local state
+        card.style.transition = 'opacity .2s, height .25s';
+        card.style.opacity = '0'; card.style.height = '0'; card.style.overflow = 'hidden';
+        setTimeout(() => card.remove(), 260);
+        showToast('Restaurant removed');
+      } catch (err) {
+        console.error('Delete failed:', err);
+        showToast('⚠️ Delete failed — check connection');
+      }
+    });
+    list.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   ADD MODAL
+══════════════════════════════════════════════════════ */
+let parsedData = null, parseTimer = null;
+let placesLibLoaded = false;
+
+async function ensurePlacesLib() {
+  if (placesLibLoaded) return;
+  await google.maps.importLibrary('places');
+  placesLibLoaded = true;
+}
+
+function openAddModal() {
+  document.getElementById('modal-add').classList.add('open');
+  document.getElementById('modal-url-input').value = '';
+  document.getElementById('modal-parsed').classList.remove('visible');
+  document.getElementById('modal-parsed').innerHTML = '';
+  document.getElementById('parse-loading').classList.remove('visible');
+  document.getElementById('modal-submit').disabled = true;
+  document.getElementById('modal-submit').textContent = 'Add Restaurant';
+  parsedData = null;
+}
+function closeAddModal() { document.getElementById('modal-add').classList.remove('open'); }
+
+function onUrlInput(e) {
+  const val = e.target.value.trim();
+  clearTimeout(parseTimer);
+  document.getElementById('modal-parsed').classList.remove('visible');
+  document.getElementById('modal-parsed').innerHTML = '';
+  document.getElementById('modal-submit').disabled = true;
+  parsedData = null;
+  if (val.length < 2) { document.getElementById('parse-loading').classList.remove('visible'); return; }
+  document.getElementById('parse-loading').classList.add('visible');
+  parseTimer = setTimeout(() => {
+    parseMapURL(val).catch(err => {
+      console.error('parseMapURL error:', err);
+      document.getElementById('parse-loading').classList.remove('visible');
+      showToast('⚠️ Could not fetch details');
+    });
+  }, 3000);
+}
+
+function extractSearchQuery(url) {
+  if (!/^https?:\/\//.test(url)) return `${url.trim()} Atlanta`;
+  try {
+    const d = decodeURIComponent(url);
+    const place = d.match(/\/place\/([^/@?+]+)/);
+    if (place) return place[1].replace(/\+/g,' ').replace(/_/g,' ').replace(/\(.*\)/g,'').trim();
+    const q = d.match(/[?&]q=([^&]+)/);
+    if (q) return q[1].replace(/\+/g,' ').split(',')[0].trim();
+    const a = d.match(/[?&](?:address|daddr)=([^&]+)/);
+    if (a) return a[1].replace(/\+/g,' ').split(',')[0].trim();
+  } catch(e) {}
+  return '';
+}
+
+function priceSymbol(level) {
+  if (level == null || level === '') return '';
+  const map = {
+    PRICE_LEVEL_FREE: 'Free',
+    PRICE_LEVEL_INEXPENSIVE: '$',
+    PRICE_LEVEL_MODERATE: '$$',
+    PRICE_LEVEL_EXPENSIVE: '$$$',
+    PRICE_LEVEL_VERY_EXPENSIVE: '$$$$',
+  };
+  if (typeof level === 'string') return map[level] || '';
+  return '$'.repeat(Math.max(1, Math.min(4, Number(level))));
+}
+
+async function parseMapURL(url) {
+  await ensurePlacesLib();
+  const isShortLink = /goo\.gl|maps\.app\.goo/.test(url);
+  const query = isShortLink ? '' : extractSearchQuery(url);
+  if (!query) {
+    document.getElementById('parse-loading').classList.remove('visible');
+    showManualSearch(url);
+    return;
+  }
+  await searchAndFill(query, url);
+}
+
+function showManualSearch(originalUrl) {
+  const el = document.getElementById('modal-parsed');
+  el.innerHTML = `
+    <div style="font-size:0.82rem;color:var(--gray-600);margin-bottom:8px;">
+      Short share links don't contain the place name — type it below to search:
+    </div>
+    <div style="display:flex;gap:8px;">
+      <input id="manual-search-input" class="modal-input"
+        placeholder="e.g. Anh's Kitchen Atlanta"
+        style="flex:1;margin:0;"
+      />
+      <button onclick="runManualSearch('${originalUrl}')"
+        style="padding:0 16px;border-radius:12px;background:var(--purple);color:white;border:none;cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap;">
+        Search
+      </button>
+    </div>
+  `;
+  el.classList.add('visible');
+  const input = document.getElementById('manual-search-input');
+  input.focus();
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') runManualSearch(originalUrl);
+  });
+}
+
+async function runManualSearch(originalUrl) {
+  const input = document.getElementById('manual-search-input');
+  const query = input?.value?.trim();
+  if (!query) return;
+  document.getElementById('modal-parsed').classList.remove('visible');
+  document.getElementById('parse-loading').classList.add('visible');
+  await searchAndFill(query, originalUrl);
+}
+
+async function searchAndFill(query, fallbackUrl) {
+  const oldDiv = document.getElementById('_gmap_sink');
+  if (oldDiv) oldDiv.remove();
+  const mapDiv = document.createElement('div');
+  mapDiv.id = '_gmap_sink';
+  mapDiv.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+  document.body.appendChild(mapDiv);
+  new google.maps.Map(mapDiv, { center: { lat: 0, lng: 0 }, zoom: 1 });
+
+  const { Place } = await google.maps.importLibrary('places');
+
+  const { places } = await Place.searchByText({
+    textQuery: query,
+    fields: ['id', 'displayName', 'formattedAddress', 'priceLevel', 'currentOpeningHours', 'photos', 'googleMapsURI'],
+    maxResultCount: 1,
+  });
+
+  if (!places?.length) {
+    document.getElementById('parse-loading').classList.remove('visible');
+    showManualSearch(fallbackUrl);
+    return;
+  }
+
+  const p = places[0];
+  const name       = p.displayName || query;
+  const address    = p.formattedAddress || '';
+  const priceLevel = priceSymbol(p.priceLevel);
+  const mapURL     = p.googleMapsURI || fallbackUrl;
+
+  let openHours = '';
+  if (p.currentOpeningHours?.weekdayDescriptions?.length) {
+    const todayIdx = (new Date().getDay() + 6) % 7;
+    const raw = p.currentOpeningHours.weekdayDescriptions[todayIdx] || '';
+    openHours = raw.replace(/^[^:]+:\s*/, '');
+  }
+
+  let photoURL = '';
+  if (p.photos?.length) {
+    try { photoURL = p.photos[0].getURI({ maxWidth: 800 }); } catch(e) {}
+  }
+
+  parsedData = { name, address, photoURL, priceLevel, openHours, mapURL };
+
+  document.getElementById('parse-loading').classList.remove('visible');
+  const el = document.getElementById('modal-parsed');
+
+  const photoThumb = photoURL
+    ? `<img src="${photoURL}" alt="" style="width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:12px;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.1);" onerror="this.style.display='none'">`
+    : `<div style="width:100%;height:60px;background:var(--gray-100);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--gray-400);font-size:13px;margin-bottom:12px;">No photo available</div>`;
+
+  el.innerHTML = `
+    ${photoThumb}
+    <div style="padding:4px;">
+      <div style="font-size:1.05rem;font-weight:700;color:var(--gray-900);">${name}</div>
+      <div style="font-size:0.85rem;color:var(--gray-600);margin-top:3px;">${[priceLevel, openHours].filter(Boolean).join(' · ')}</div>
+      <div style="font-size:0.82rem;color:var(--gray-500);margin-top:4px;line-height:1.4;">📍 ${address}</div>
+      <div style="margin-top:10px;font-size:0.75rem;"><span style="color:#10B981;font-weight:600;">✓ Fetched from Google Places</span></div>
+    </div>
+  `;
+  el.classList.add('visible');
+  document.getElementById('modal-submit').disabled = false;
+}
+
+async function submitAdd() {
+  if (!parsedData) return;
+  const btn = document.getElementById('modal-submit');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const r = await dbInsert(parsedData);
+    localAdd(r);
+    closeAddModal();
+    renderEdit();
+    showToast(`✓ Added ${r.name}`);
+  } catch (err) {
+    console.error('Insert failed:', err);
+    showToast('⚠️ Save failed — check connection');
+    btn.disabled = false; btn.textContent = 'Add Restaurant';
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   MODE 4: NARROW (FACE-OFF)
+══════════════════════════════════════════════════════ */
+let faceoffQueue = [], cardA = null, cardB = null;
+let faceoffGrayed = new Set(), winnerDeclared = false;
+
+function initFaceoff() {
+  const activeIds = choiceOrder.filter(id => !choiceGrayed.has(id));
+  faceoffQueue = activeIds
+    .map(id => masterListDB.find(r => r.id === id) || keptList.find(r => r.id === id))
+    .filter(Boolean);
+  faceoffGrayed = new Set(); winnerDeclared = false;
+  if (faceoffQueue.length < 2) { renderFaceoffEmpty(); return; }
+  cardA = faceoffQueue.shift(); cardB = faceoffQueue.shift();
+  renderFaceoff();
+}
+
+function renderFaceoffEmpty() {
+  document.getElementById('faceoff-container').innerHTML = `
+    <div class="narrow-empty">
+      <div class="narrow-empty-icon">🍽️</div>
+      <div class="narrow-empty-title">Not enough picks!</div>
+      <div class="narrow-empty-sub">You need at least 2 active restaurants. Go back and restore some.</div>
+    </div>`;
+}
+
+function renderFaceoff() {
+  const c = document.getElementById('faceoff-container');
+  c.innerHTML = '';
+  if (!cardA && !cardB) { renderFaceoffEmpty(); return; }
+  const ha = makeFaceoffHalf(cardA, 'A');
+  const div = document.createElement('div'); div.className = 'faceoff-divider'; div.innerHTML = '<span class="vs-badge">VS</span>';
+  const hb = makeFaceoffHalf(cardB, 'B');
+  ha.addEventListener('click', () => pickWinner('A'));
+  hb.addEventListener('click', () => pickWinner('B'));
+  c.appendChild(ha); c.appendChild(div); c.appendChild(hb);
+}
+
+function makeFaceoffHalf(r, side) {
+  const h = document.createElement('div');
+  h.className = 'faceoff-half'; h.id = `faceoff-${side}`; h.dataset.id = r ? r.id : '';
+  if (!r) { h.style.background = 'var(--gray-200)'; return h; }
+  const bg = r.photoURL ? `background-image:url(${r.photoURL})` : `background:${colorGradient(r)}`;
+  h.innerHTML = `
+    <div class="faceoff-photo" style="${bg}"></div>
+    <div class="faceoff-overlay">
+      <div class="faceoff-info">
+        <div class="faceoff-name">${r.name}</div>
+        <div class="faceoff-meta">${r.openHours}</div>
+      </div>
+    </div>
+    <div class="faceoff-tap-hint"><div class="tap-ring">👆</div></div>`;
+  return h;
+}
+
+function pickWinner(side) {
+  if (winnerDeclared) return;
+  const winner = side === 'A' ? cardA : cardB;
+  const loser  = side === 'A' ? cardB : cardA;
+  document.getElementById(`faceoff-${side === 'A' ? 'B' : 'A'}`)?.classList.add('grayed');
+  faceoffGrayed.add(loser.id);
+  const next = faceoffQueue.shift();
+  setTimeout(() => {
+    if (!next) { declareWinner(winner, side); return; }
+    if (side === 'A') { cardB = next; cardA = winner; }
+    else              { cardA = next; cardB = winner; }
+    renderFaceoff();
+  }, 400);
+}
+
+function declareWinner(r, side) {
+  winnerDeclared = true;
+  const el = document.getElementById(`faceoff-${side}`);
+  if (el) {
+    el.classList.add('winner');
+    const ov = document.createElement('div');
+    ov.className = 'winner-overlay';
+    ov.innerHTML = `
+      <div class="winner-badge">🏆</div>
+      <div class="winner-title">${r.name}</div>
+      <div class="winner-sub">Tonight's pick! Let's go eat.</div>
+      <button class="winner-restart" onclick="restartAndSwipe()">Start Over</button>`;
+    el.appendChild(ov);
+    setTimeout(() => ov.classList.add('show'), 50);
+  }
+  launchConfetti();
+}
+
+function restartAndSwipe() { stopConfetti(); restartSession(); }
+
+/* ══════════════════════════════════════════════════════
+   CONFETTI
+══════════════════════════════════════════════════════ */
+let confettiAnimId = null;
+const confettiParts = [];
+
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const app    = document.getElementById('app');
+  canvas.width = app.offsetWidth; canvas.height = app.offsetHeight;
+  const ctx    = canvas.getContext('2d');
+  const cols   = ['#AE6FFC','#34A853','#FBBC04','#EA4335','#FF6B6B','#4ECDC4'];
+  for (let i = 0; i < 120; i++) confettiParts.push({
+    x: Math.random()*canvas.width, y: Math.random()*canvas.height - canvas.height,
+    w: 6+Math.random()*6, h: 3+Math.random()*4,
+    color: cols[Math.floor(Math.random()*cols.length)],
+    rot: Math.random()*360, vx:(Math.random()-.5)*3, vy:2+Math.random()*4, vr:(Math.random()-.5)*6,
+  });
+  const draw = () => {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    confettiParts.forEach(p => {
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      if (p.y > canvas.height) { p.y = -20; p.x = Math.random()*canvas.width; }
+    });
+    confettiAnimId = requestAnimationFrame(draw);
+  };
+  draw();
+}
+
+function stopConfetti() {
+  if (confettiAnimId) { cancelAnimationFrame(confettiAnimId); confettiAnimId = null; }
+  confettiParts.length = 0;
+  const canvas = document.getElementById('confetti-canvas');
+  canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+}
+
+// ── KICK OFF ──
+init();
+</script>
+</body>
+</html>

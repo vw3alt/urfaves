@@ -53,6 +53,9 @@
     color: var(--gray-900);
     touch-action: none;
   }
+  @supports (height: 100dvh) {
+    html, body { height: 100dvh; }
+  }
 
   #app {
     height: 100%; width: 100%; max-width: 430px;
@@ -427,8 +430,7 @@
     padding: 4px 12px; border-radius: 20px; border: 2px solid var(--gray-800); letter-spacing: 1px;
   }
 
-  .faceoff-tap-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s; }
-  .faceoff-half:hover .faceoff-tap-hint { opacity: 1; }
+  .faceoff-half:hover { opacity: 1; }
   .tap-ring {
     width: 60px; height: 60px; border-radius: 50%;
     border: 2px solid rgba(255,255,255,.6); background: rgba(255,255,255,.15);
@@ -829,8 +831,8 @@ function doSwipe(direction, card, r) {
   card.style.transform  = `translateX(${flyX}px) rotate(${direction === 'right' ? 20 : -20}deg)`;
   card.style.opacity    = '0';
   activeDeck = activeDeck.filter(rr => rr.id !== r.id);
-  if (direction === 'right') { keptList.push(r);   showToast(`♥ Keeping ${r.name}`); }
-  else                       { grayedList.push(r); showToast(`✕ Skipping ${r.name}`); }
+  if (direction === 'right') { keptList.push(r);   showToast(`♥  Keeping ${r.name}`); }
+  else                       { grayedList.push(r); showToast(`✕  Skipping ${r.name}`); }
   setTimeout(() => {
     renderSwipe();
     if (activeDeck.length === 0) setTimeout(goToChoice, 600);
@@ -998,19 +1000,6 @@ function renderEdit() {
         <div class="edit-card-meta">${r.openHours}</div>
       </div>
       <div class="edit-card-delete visible" data-id="${r.id}"><span class="del-icon">❌</span></div>`;
-
-    // swipe-left to reveal delete zone on mobile
-    let sx, dx = 0;
-    card.addEventListener('touchstart', e => { sx = e.touches[0].clientX; dx = 0; }, { passive: true });
-    card.addEventListener('touchmove', e => {
-      if (sx === undefined) return;
-      dx = e.touches[0].clientX - sx;
-      if (dx < -10) e.preventDefault();
-    }, { passive: false });
-    card.addEventListener('touchend', () => {
-      card.querySelector('.edit-card-delete').classList.toggle('visible', dx < -50);
-      sx = undefined;
-    });
 
     card.querySelector('.edit-card-delete').addEventListener('click', async () => {
       const id = +card.querySelector('[data-id]').dataset.id;
@@ -1275,8 +1264,7 @@ function makeFaceoffHalf(r, side) {
         <div class="faceoff-name">${r.name}</div>
         <div class="faceoff-meta">${r.openHours}</div>
       </div>
-    </div>
-    <div class="faceoff-tap-hint"><div class="tap-ring">👆</div></div>`;
+    </div>`;
   return h;
 }
 
@@ -1305,7 +1293,6 @@ function declareWinner(r, side) {
     ov.innerHTML = `
       <div class="winner-badge">🏆</div>
       <div class="winner-title">${r.name}</div>
-      <div class="winner-sub">Tonight's pick! Let's go eat.</div>
       <button class="winner-restart" onclick="restartAndSwipe()">Start Over</button>`;
     el.appendChild(ov);
     setTimeout(() => ov.classList.add('show'), 50);
@@ -1352,6 +1339,14 @@ function stopConfetti() {
   const canvas = document.getElementById('confetti-canvas');
   canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
 }
+
+const appEl = document.getElementById('app');
+appEl.style.height = window.innerHeight + 'px';
+window.addEventListener('resize', () => {
+  if (window.innerHeight > appEl.offsetHeight) {
+    appEl.style.height = window.innerHeight + 'px';
+  }
+});
 
 // ── KICK OFF ──
 init();

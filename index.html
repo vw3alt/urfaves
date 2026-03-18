@@ -1135,11 +1135,7 @@ async function runManualSearch(originalUrl) {
 }
 
 async function uploadPhotoToSupabase(googlePhotoURL, restaurantName) {
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/fetch-photo`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-    body: JSON.stringify({ url: googlePhotoURL }),
-  });
+  const res = await fetch(googlePhotoURL);
   if (!res.ok) throw new Error('Failed to fetch photo');
 
   const blob = await res.blob();

@@ -456,7 +456,7 @@
 
   .narrow-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 20px; padding-top: 56px; text-align: center; color: var(--gray-600); }
   .narrow-empty-icon { font-size: 48px; }
-  .narrow-empty-title { font-size: 18px; font-weight: 600; color: var(--gray-800); }
+  .narrow-empty-title { font-size: 18px; font-weight: 600; color: var(--gray-200); }
   .narrow-empty-sub { font-size: 14px; max-width: 260px; line-height: 1.5; }
 
   /* ── CONFETTI ── */
@@ -535,7 +535,7 @@
       <div class="modal-handle"></div>
       <div class="modal-title">Add a Restaurant</div>
       <div class="modal-sub">Search or paste a Google Maps link below.</div>
-      <input class="modal-input" id="modal-url-input" type="url" placeholder="The Varsity or https://maps.google.com/..." />
+      <input class="modal-input" id="modal-url-input" type="search" placeholder="The Varsity or https://maps.google.com/..." autocomplete="off" autocorrect="off" autocapitalize="off" />
       <div class="parse-loading" id="parse-loading"><div class="spinner"></div> Fetching details…</div>
       <div class="modal-parsed" id="modal-parsed"></div>
       <div class="modal-actions">

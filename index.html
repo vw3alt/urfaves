@@ -1134,6 +1134,28 @@ async function runManualSearch(originalUrl) {
   await searchAndFill(query, originalUrl);
 }
 
+async function uploadPhotoToSupabase(googlePhotoURL, restaurantName) {
+  const proxyURL = `https://api.allorigins.win/raw?url=${encodeURIComponent(googlePhotoURL)}`;
+  const res = await fetch(proxyURL);
+  if (!res.ok) throw new Error('Failed to fetch photo');
+
+  const blob = await res.blob();
+  const ext  = blob.type.includes('png') ? 'png' : 'jpg';
+  const filename = `${Date.now()}-${restaurantName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.${ext}`;
+
+  const { data, error } = await sb.storage
+    .from('restaurant-photos')
+    .upload(filename, blob, { contentType: blob.type, upsert: false });
+
+  if (error) throw error;
+
+  const { data: { publicUrl } } = sb.storage
+    .from('restaurant-photos')
+    .getPublicUrl(filename);
+
+  return publicUrl;
+}
+
 async function searchAndFill(query, fallbackUrl) {
   const oldDiv = document.getElementById('_gmap_sink');
   if (oldDiv) oldDiv.remove();
@@ -1172,7 +1194,12 @@ async function searchAndFill(query, fallbackUrl) {
 
   let photoURL = '';
   if (p.photos?.length) {
-    try { photoURL = p.photos[0].getURI({ maxWidth: 800 }); } catch(e) {}
+    try {
+      const googlePhotoURL = p.photos[0].getURI({ maxWidth: 800 });
+      photoURL = await uploadPhotoToSupabase(googlePhotoURL, name);
+    } catch(e) {
+      console.warn('Photo upload failed, skipping:', e);
+    }
   }
 
   parsedData = { name, address, photoURL, priceLevel, openHours, mapURL };

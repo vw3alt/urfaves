@@ -832,8 +832,8 @@ function doSwipe(direction, card, r) {
   card.style.transform  = `translateX(${flyX}px) rotate(${direction === 'right' ? 20 : -20}deg)`;
   card.style.opacity    = '0';
   activeDeck = activeDeck.filter(rr => rr.id !== r.id);
-  if (direction === 'right') { keptList.push(r);   showToast(`♥  Keeping ${r.name}`); }
-  else                       { grayedList.push(r); showToast(`✕  Skipping ${r.name}`); }
+  if (direction === 'right') { keptList.push(r);}
+  else                       { grayedList.push(r);}
   setTimeout(() => {
     renderSwipe();
     if (activeDeck.length === 0) setTimeout(goToChoice, 600);

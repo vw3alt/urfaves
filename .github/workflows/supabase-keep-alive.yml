@@ -1,9 +1,9 @@
 name: Supabase Keep Alive
+
 on:
   schedule:
-    # This runs at 00:00 every Monday and Thursday
-    - cron: '0 0 */2 * *'
-  workflow_dispatch: # Allows you to run it manually to test
+    - cron: '0 0 */3 * *'   # Every 3 days — more than enough
+  workflow_dispatch:
 
 jobs:
   ping_supabase:
@@ -11,8 +11,11 @@ jobs:
     steps:
       - name: Ping Database via REST API
         run: |
-          curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/restaurants?select=id&limit=1" \
+          echo "Pinging Supabase..."
+          curl -4 --fail --silent --show-error --max-time 15 \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/restaurants?select=id&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json" \
-            --fail --silent --show-error --max-time 10
+            -H "Content-Type: application/json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
